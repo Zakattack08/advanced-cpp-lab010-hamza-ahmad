@@ -37,31 +37,64 @@ std::size_t HashTable::probe(const std::string& key) const {
     return index;
 }
 
+std::size_t HashTable::getIndex(const std::string& key) const {
+    const std::size_t original = hashFunction(key);
+
+    for (std::size_t step = 0; step < table_.size(); ++step) {
+        const std::size_t index = (original + step * step) % table_.size();
+        const HashEntry& entry = table_[index];
+        if (entry.occupied && !entry.deleted && entry.key == key) {
+            return index;
+        }
+    }
+
+    return table_.size();
+}
+
 bool HashTable::insert(const std::string& key, int value) {
-    (void)key;
-    (void)value;
-    throw std::logic_error("Student implementation required: insert");
+    if (contains(key))
+        return false; //if key already exists operation fails
+
+    if ((loadFactor() + static_cast<double>(1/table_.size())) >= 0.5) 
+        rehash(); //if table will be 50% or more full after the insertion rehash
+
+    //create and insert new entry
+    table_[probe(key)] = HashEntry {key, value, true}; 
+    size_++;
+    return true;
 }
 
 bool HashTable::remove(const std::string& key) {
-    (void)key;
-    throw std::logic_error("Student implementation required: remove");
+    const std::size_t index = getIndex(key);
+    if (index != table_.size()) {
+        table_[index].deleted = true;
+        --size_;
+        return true;
+    }
+
+    return false;
 }
 
 bool HashTable::contains(const std::string& key) const {
-    (void)key;
-    throw std::logic_error("Student implementation required: contains");
+    return getIndex(key) != table_.size();
 }
 
 int HashTable::get(const std::string& key) const {
-    (void)key;
-    throw std::logic_error("Student implementation required: get");
+    const std::size_t index = getIndex(key);
+    if (index != table_.size()) {
+        return table_[index].value;
+    }
+
+    throw std::logic_error("The key \"" + key + "\" does not exist");
 }
 
 bool HashTable::update(const std::string& key, int newValue) {
-    (void)key;
-    (void)newValue;
-    throw std::logic_error("Student implementation required: update");
+    const std::size_t index = getIndex(key);
+    if (index != table_.size()) {
+        table_[index].value = newValue;
+        return true;
+    }
+    return false;
 }
 
 std::size_t HashTable::size() const noexcept {
@@ -101,7 +134,11 @@ std::vector<int> HashTable::values() const {
 }
 
 void HashTable::rehash() {
-    throw std::logic_error("Student implementation required: rehash");
+    std::vector<HashEntry> temp(table_);
+    table_ = std::vector<HashEntry> (nextPrime(table_.size()*2));
+    for (HashEntry entry : temp) {
+        if (entry.occupied) table_[probe(entry.key)] = entry;
+    }
 }
 
 bool HashTable::isPrime(std::size_t value) const {

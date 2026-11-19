@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+
 struct HashEntry {
     std::string key;
     int value;
@@ -39,6 +40,7 @@ private:
 
     std::size_t hashFunction(const std::string& key) const;
     std::size_t probe(const std::string& key) const;
+    std::size_t getIndex(const std::string& key) const;
     void rehash();
     bool isPrime(std::size_t value) const;
     std::size_t nextPrime(std::size_t value) const;
